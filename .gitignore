@@ -1,0 +1,14 @@
+# Arquivos Java compilados
+*.class
+out/
+bin/
+
+# Configurações de editores
+.idea/
+.vscode/
+*.iml
+
+# Arquivos temporários
+*.log
+Thumbs.db
+.DS_Store

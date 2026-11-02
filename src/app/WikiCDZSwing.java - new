@@ -1,0 +1,330 @@
+
+package app;
+
+import dao.PersonagemDAO;
+import model.Personagem;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.File;
+import java.util.List;
+
+public class WikiCDZSwing extends JFrame {
+
+	private final PersonagemDAO personagemDAO = new PersonagemDAO();
+
+	private final DefaultListModel<Personagem> modeloLista = 
+			new DefaultListModel<>();
+
+	private final JList<Personagem> listaPersonagens = 
+			new JList<>(modeloLista);
+
+	private final JLabel imagem = new JLabel(
+			"Selecione um cavaleiro", 
+			SwingConstants.CENTER
+	);
+
+	private final JLabel nome = new JLabel("Wiki Cavaleiros do Zodíaco");
+	private final JLabel constelacao = new JLabel("Constelação: ");
+	private final JLabel classe = new JLabel("Classe: ");
+	private final JLabel idade = new JLabel("Idade: ");
+
+	private final JTextArea descricao = new JTextArea();
+
+	public WikiCDZSwing() {
+		setTitle("Wiki Cavaleiros do Zodíaco");
+		setSize(1000, 650);
+		setMinimumSize(new Dimension(800, 500));
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setLocationRelativeTo(null);
+
+		CriarInterface();
+	}
+
+
+	private void CriarInterface() {
+
+		PainelEstrelado principal = new PainelEstrelado();
+		principal.setLayout(new BorderLayout(12, 12));
+		principal.setBorder(new EmptyBorder(15, 15, 15, 15));
+		setContentPane(principal);
+
+		JLabel titulo = new JLabel("WIKI CAVALEIROS DO ZODIACO");
+		titulo.setFont(new Font("SansSerif", Font.BOLD, 24));
+
+		// Cor azul-celeste do título
+		titulo.setForeground(new Color(100, 200, 255));
+
+		principal.add(titulo, BorderLayout.NORTH);
+
+		// Menu Lateral com categorias.
+		JPanel menu = new JPanel();
+		menu.setOpaque(false);
+		menu.setLayout(new BoxLayout(menu, BoxLayout.Y_AXIS));
+		menu.setPreferredSize(new Dimension(190, 0));
+
+		JLabel tituloMenu = new JLabel("CATEGORIAS");
+		tituloMenu.setFont(new Font("SansSerif", Font.BOLD, 16));
+		tituloMenu.setBorder(new EmptyBorder(10, 5, 15, 5));
+
+		menu.add(tituloMenu);
+
+		adicionarBotaoCategoria(menu, "Cavaleiros de Bronze", "Bronze");
+		adicionarBotaoCategoria(menu, "Cavaleiros de Prata", "Prata");
+		adicionarBotaoCategoria(menu, "Cavaleiros de Ouro", "Ouro");
+
+		principal.add(menu, BorderLayout.WEST);
+
+		// Lista de personagens.
+		listaPersonagens.setSelectionMode(
+				ListSelectionModel.SINGLE_SELECTION
+			);
+
+		listaPersonagens.setFont(
+				new Font("SansSerif", Font.PLAIN, 15)
+			);
+
+		listaPersonagens.setFixedCellHeight(32);
+
+		listaPersonagens.setCellRenderer((lista, personagem, 
+											indice, selecionado, foco) -> {
+			JLabel item = new JLabel(personagem.getNome());
+			item.setOpaque(true);
+			item.setBorder(new EmptyBorder(5, 8, 5, 8));
+
+			if (selecionado) {
+				item.setBackground(new Color(40, 65, 100));
+				item.setForeground(Color.WHITE);
+			} else {
+				item.setBackground(Color.WHITE);
+				item.setForeground(Color.DARK_GRAY);
+			}
+
+			return item;
+		});
+
+		listaPersonagens.addListSelectionListener(event -> {
+			if (!event.getValueIsAdjusting()) {
+				Personagem selecionado = 
+						listaPersonagens.getSelectedValue();
+
+				if (selecionado != null) {
+					exibirPersonagem(selecionado);
+				}
+			}
+		});
+
+		JScrollPane rolagemLista = new JScrollPane(listaPersonagens);
+		rolagemLista.setPreferredSize(new Dimension(230, 0));
+
+		principal.add(rolagemLista, BorderLayout.CENTER);
+
+		// Painel da ficha do personagem.
+		JPanel ficha = new JPanel(new BorderLayout(15, 15));
+		ficha.setOpaque(false);
+		ficha.setBorder(new EmptyBorder(5, 10, 5, 5));
+
+		imagem.setPreferredSize(new Dimension(280, 350));
+		imagem.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+
+		JPanel informacoes = new JPanel();
+		informacoes.setOpaque(false);
+		informacoes.setLayout(
+				new BoxLayout(informacoes, BoxLayout.Y_AXIS)
+		);
+
+		nome.setFont(new Font("SansSerif", Font.BOLD, 25));
+
+		constelacao.setFont(new Font("SansSerif", Font.PLAIN, 16));
+		classe.setFont(new Font("SansSerif", Font.PLAIN, 16));
+		idade.setFont(new Font("SansSerif", Font.PLAIN, 16));
+
+		descricao.setEditable(false);
+		descricao.setLineWrap(true);
+		descricao.setWrapStyleWord(true);
+		descricao.setFont(new Font("SansSerif", Font.PLAIN, 16));
+		descricao.setBackground(informacoes.getBackground());
+		descricao.setBorder(new EmptyBorder(10, 0, 10, 0));
+
+		informacoes.add(nome);
+		informacoes.add(Box.createVerticalStrut(15));
+		informacoes.add(constelacao);
+		informacoes.add(Box.createVerticalStrut(8));
+		informacoes.add(classe);
+		informacoes.add(Box.createVerticalStrut(8));
+		informacoes.add(idade);
+		informacoes.add(Box.createVerticalStrut(15));
+		JLabel tituloDescricao = new JLabel("Descrição: ");
+		tituloDescricao.setFont(new Font("SansSerif", Font.PLAIN, 16));
+
+		informacoes.add(tituloDescricao);
+		informacoes.add(Box.createVerticalStrut(5));
+
+		JScrollPane rolagemDescricao = new JScrollPane(descricao);
+		rolagemDescricao.setBorder(null);
+
+		informacoes.add(rolagemDescricao);
+
+		ficha.add(imagem, BorderLayout.NORTH);
+		ficha.add(informacoes, BorderLayout.CENTER);
+
+		principal.add(ficha, BorderLayout.EAST);
+
+		// Ajusta o espaço dos paineis
+		ficha.setPreferredSize(new Dimension(390, 0));
+	}
+
+	private void adicionarBotaoCategoria(
+			JPanel menu, String texto, String categoria) {
+
+		JButton botao = new JButton(texto);
+		botao.setAlignmentX(Component.LEFT_ALIGNMENT);
+		botao.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+
+		botao.addActionListener(event -> carregarCategoria(categoria));
+
+		menu.add(botao);
+		menu.add(Box.createVerticalStrut(8));
+	}
+
+	private void carregarCategoria(String categoria) {
+
+		modeloLista.clear();
+		imagem.setIcon(null);
+		imagem.setText("Selecione um Cavaleiro");
+		nome.setText("Wiki Cavaleiros do Zodíaco");
+		constelacao.setText("Constelação: ");
+		classe.setText("Classe: ");
+		idade.setText("Idade: ");
+		descricao.setText("");
+
+		List<Personagem> personagens = 
+				personagemDAO.listarPorClasse(categoria);
+
+		for (Personagem personagem : personagens) {
+			modeloLista.addElement(personagem);
+		}
+
+		if (!personagens.isEmpty()) {
+			listaPersonagens.setSelectedIndex(0);
+
+		} else {
+
+			JOptionPane.showMessageDialog(
+				this,
+			 	"Nenhum personagem encontrado para: " + categoria, "Wiki Cavaleiros do Zodíaco",
+			JOptionPane.INFORMATION_MESSAGE);
+		}
+	}
+
+	private void exibirPersonagem(Personagem personagem) {
+
+		nome.setText(personagem.getNome());
+		constelacao.setText(
+				"Constelação: " + personagem.getConstelacao());
+
+		classe.setText("Classe: " + personagem.getClasse());
+
+		if (personagem.getIdade() == 0) {
+			idade.setText("Idade: Não informada");
+
+		} else {
+			idade.setText("Idade: " + personagem.getIdade());
+		}
+
+		descricao.setText(personagem.getDescricao());
+		descricao.setCaretPosition(0);
+
+		carregarImagem(personagem.getCaminhoImagem());
+	}
+
+	private void carregarImagem(String caminho) {
+
+		imagem.setIcon(null);
+		imagem.setText("Imagem não encontrada");
+
+		if (caminho == null || caminho.isBlank()) {
+			return;
+		}
+
+		File arquivo = new File(caminho);
+
+		// Caminhos relativos são procurados a partir da raiz do projeto.
+		if (!arquivo.isAbsolute()) {
+			arquivo = new File(System.getProperty("user.dir"), caminho);
+		}
+
+		if (!arquivo.isFile()) {
+			System.out.println(
+					"Imagem nãso encontrada: " + arquivo.getAbsolutePath());
+			return;
+		}
+
+		ImageIcon original = new ImageIcon(arquivo.getAbsolutePath());
+
+		int largura = 200;
+		int altura = 350;
+
+		Image redimensionada = original.getImage().getScaledInstance(
+				largura, altura, Image.SCALE_SMOOTH);
+
+		imagem.setText("");
+		imagem.setIcon(new ImageIcon(redimensionada));
+	}
+
+	public static void main(String[] args) {
+		SwingUtilities.invokeLater(() -> {
+			WikiCDZSwing janela = new WikiCDZSwing();
+			janela.setVisible(true);
+		});
+	}
+
+
+	// PAINEL DE FUNDO ESTRELADO
+	private class PainelEstrelado extends JPanel {
+
+    private final float[][] estrelas = new float[150][3];
+
+    public PainelEstrelado() {
+
+        java.util.Random random = new java.util.Random();
+
+        for (int i = 0; i < estrelas.length; i++) {
+
+            estrelas[i][0] = random.nextFloat();
+            estrelas[i][1] = random.nextFloat();
+            estrelas[i][2] = 1 + random.nextInt(3);
+        }
+
+        setBackground(Color.BLACK);
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+
+        	super.paintComponent(g);
+
+        	g.setColor(Color.BLACK);
+        	g.fillRect(0, 0, getWidth(), getHeight());
+
+        	for (float[] estrela : estrelas) {
+
+            	int x = (int) (estrela[0] * getWidth());
+            	int y = (int) (estrela[1] * getHeight());
+            	int tamanho = (int) estrela[2];
+
+            	g.setColor(new Color(100, 200, 255));
+
+            	g.fillOval(x, y, tamanho, tamanho);
+        	}
+    	}
+	}
+}
+
+
+
+
+
